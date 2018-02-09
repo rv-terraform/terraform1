@@ -1,7 +1,7 @@
 # Terraform on Azure
 
 Prerequisite on linux: azure cli, terraform and git.<br>
-Prerequisite on windows: azure cli, terraform, git, powershell/git-bash.
+Prerequisite on windows: azure cli, terraform, git and powershell/git-bash.
 
 ## Follow the instructions below, 
 
