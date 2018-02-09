@@ -1,3 +1,7 @@
+variable access_subscriptid {
+    type = "xxxxxx"
+}
+
 variable access_appid {
     type = "xxxxxx"
 }
