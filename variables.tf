@@ -13,3 +13,7 @@ variable access_clientsecret {
 variable access_tenantid {
     type = "xxxxxxx"
 }
+
+variable access_location {
+    type = "xxxxxxx"
+}
