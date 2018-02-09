@@ -10,7 +10,7 @@ Copy the url, paste it on the browser.  then copy the code and paste it on the b
 This should output the account info, grab the subscription-id and put below.<br>
 
 $ az ad sp create-for-rbac --role="Contributor" --scopes="/subscriptions/subscription-id"<br>
-This will output the appid which is the clientid, the password which is the clientsecret and the tenantid.  Put it on the variables.
+This will output the appid, the password which is the clientsecret and the tenantid.  Put it on the variables.
 
 $ git clone https://github.com/tso-terraform/terraform1.git<br>
 $ cd terraform1<br>
