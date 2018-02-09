@@ -15,5 +15,5 @@ variable access_tenantid {
 }
 
 variable access_location {
-    type = "xxxxxxx"
+    type = "canadaeast"
 }
