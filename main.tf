@@ -1,14 +1,14 @@
 # create a resource group 
 resource "azurerm_resource_group" "helloterraform" {
     name = "terraformtest"
-    location = "canadaeast"
+    location = "${var.access_location}"
 }
 
 # create a virtual network
 resource "azurerm_virtual_network" "helloterraformnetwork" {
     name = "acctvn"
     address_space = ["10.0.0.0/16"]
-    location = "canadaeast"
+    location = "${var.access_location}"
     resource_group_name = "${azurerm_resource_group.helloterraform.name}"
 }
 
@@ -23,7 +23,7 @@ resource "azurerm_subnet" "helloterraformsubnet" {
 # create public IP
 resource "azurerm_public_ip" "helloterraformips" {
     name = "terraformtestip"
-    location = "canadaeast"
+    location = "${var.access_location}"
     resource_group_name = "${azurerm_resource_group.helloterraform.name}"
     public_ip_address_allocation = "dynamic"
 
@@ -35,7 +35,7 @@ resource "azurerm_public_ip" "helloterraformips" {
 # create network interface
 resource "azurerm_network_interface" "helloterraformnic" {
     name = "tfni"
-    location = "canadaeast"
+    location = "${var.access_location}"
     resource_group_name = "${azurerm_resource_group.helloterraform.name}"
 
     ip_configuration {
@@ -51,7 +51,7 @@ resource "azurerm_network_interface" "helloterraformnic" {
 resource "azurerm_storage_account" "helloterraformstorage" {
     name = "helloterraformstorage"
     resource_group_name = "${azurerm_resource_group.helloterraform.name}"
-    location = "canadaeast"
+    location = "${var.access_location}"
     account_type = "Standard_LRS"
 
     tags {
@@ -71,7 +71,7 @@ resource "azurerm_storage_container" "helloterraformstoragestoragecontainer" {
 # create virtual machine
 resource "azurerm_virtual_machine" "helloterraformvm" {
     name = "terraformvm"
-    location = "canadaeast"
+    location = "${var.access_location}"
     resource_group_name = "${azurerm_resource_group.helloterraform.name}"
     network_interface_ids = ["${azurerm_network_interface.helloterraformnic.id}"]
     vm_size = "Standard_A0"
