@@ -3,7 +3,7 @@
 Prerequisite on linux: azure cli, terraform and git.<br>
 Prerequisite on windows: azure cli, terraform, git, powershell/git-bash.
 
-## Follow below the instructions, 
+## Follow the instructions below, 
 
 $ az login<br>
 Copy the url, paste it on the browser.  then copy the code and paste it on the browser.<br>
