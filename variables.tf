@@ -1,19 +1,5 @@
-variable access_subscriptid {
-    type = "xxxxxx"
-}
-
-variable access_appid {
-    type = "xxxxxx"
-}
-
-variable access_clientsecret {
-    type = "xxxxxx"
-}
-
-variable access_tenantid {
-    type = "xxxxxxx"
-}
-
-variable access_location {
-    type = "canadaeast"
-}
+variable "access_subscriptid" {}
+variable "access_appid" {}
+variable "access_clientsecret" {}
+variable "access_tenantid" {}
+variable "access_location" {}
