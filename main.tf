@@ -1,106 +1,99 @@
-# create a resource group 
-resource "azurerm_resource_group" "helloterraform" {
-    name = "terraformtest"
-    location = "${var.access_location}"
+
+resource "azurerm_resource_group" "test" {
+  name     = "acctestrg"
+  location = "${var.access_location}"
 }
 
-# create a virtual network
-resource "azurerm_virtual_network" "helloterraformnetwork" {
-    name = "acctvn"
-    address_space = ["10.0.0.0/16"]
-    location = "${var.access_location}"
-    resource_group_name = "${azurerm_resource_group.helloterraform.name}"
+resource "azurerm_virtual_network" "test" {
+  name                = "acctvn"
+  address_space       = ["10.0.0.0/16"]
+  location            = "${var.access_location}"
+  resource_group_name = "${azurerm_resource_group.test.name}"
 }
 
-# create subnet
-resource "azurerm_subnet" "helloterraformsubnet" {
-    name = "acctsub"
-    resource_group_name = "${azurerm_resource_group.helloterraform.name}"
-    virtual_network_name = "${azurerm_virtual_network.helloterraformnetwork.name}"
-    address_prefix = "10.0.2.0/24"
+resource "azurerm_subnet" "test" {
+  name                 = "acctsub"
+  resource_group_name  = "${azurerm_resource_group.test.name}"
+  virtual_network_name = "${azurerm_virtual_network.test.name}"
+  address_prefix       = "10.0.1.0/24"
 }
 
-# create public IP
-resource "azurerm_public_ip" "helloterraformips" {
-    name = "terraformtestip"
-    location = "${var.access_location}"
-    resource_group_name = "${azurerm_resource_group.helloterraform.name}"
-    public_ip_address_allocation = "dynamic"
+resource "azurerm_network_interface" "test" {
+  name                = "acctnic"
+  location            = "${var.access_location}"
+  resource_group_name = "${azurerm_resource_group.test.name}"
 
-    tags {
-        environment = "TerraformDemo"
-    }
+  ip_configuration {
+    name                          = "testconfiguration1"
+    subnet_id                     = "${azurerm_subnet.test.id}"
+    private_ip_address_allocation = "dynamic"
+  }
 }
 
-# create network interface
-resource "azurerm_network_interface" "helloterraformnic" {
-    name = "tfni"
-    location = "${var.access_location}"
-    resource_group_name = "${azurerm_resource_group.helloterraform.name}"
-
-    ip_configuration {
-        name = "testconfiguration1"
-        subnet_id = "${azurerm_subnet.helloterraformsubnet.id}"
-        private_ip_address_allocation = "static"
-        private_ip_address = "10.0.2.5"
-        public_ip_address_id = "${azurerm_public_ip.helloterraformips.id}"
-    }
+resource "azurerm_managed_disk" "test" {
+  name                 = "datadisk_existing"
+  location             = "${var.access_location}"
+  resource_group_name  = "${azurerm_resource_group.test.name}"
+  storage_account_type = "Standard_LRS"
+  create_option        = "Empty"
+  disk_size_gb         = "100"
 }
 
-# create storage account
-resource "azurerm_storage_account" "helloterraformstorage" {
-    name = "helloterraformstorage"
-    resource_group_name = "${azurerm_resource_group.helloterraform.name}"
-    location = "${var.access_location}"
-    account_type = "Standard_LRS"
+resource "azurerm_virtual_machine" "test" {
+  name                  = "acctvm"
+  location              = "${var.access_location}"
+  resource_group_name   = "${azurerm_resource_group.test.name}"
+  network_interface_ids = ["${azurerm_network_interface.test.id}"]
+  vm_size               = "Standard_DS1_v2"
 
-    tags {
-        environment = "staging"
-    }
-}
+  # Uncomment this line to delete the OS disk automatically when deleting the VM
+  # delete_os_disk_on_termination = true
 
-# create storage container
-resource "azurerm_storage_container" "helloterraformstoragestoragecontainer" {
-    name = "vhd"
-    resource_group_name = "${azurerm_resource_group.helloterraform.name}"
-    storage_account_name = "${azurerm_storage_account.helloterraformstorage.name}"
-    container_access_type = "private"
-    depends_on = ["azurerm_storage_account.helloterraformstorage"]
-}
+  # Uncomment this line to delete the data disks automatically when deleting the VM
+  # delete_data_disks_on_termination = true
 
-# create virtual machine
-resource "azurerm_virtual_machine" "helloterraformvm" {
-    name = "terraformvm"
-    location = "${var.access_location}"
-    resource_group_name = "${azurerm_resource_group.helloterraform.name}"
-    network_interface_ids = ["${azurerm_network_interface.helloterraformnic.id}"]
-    vm_size = "Standard_A0"
+  storage_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "16.04-LTS"
+    version   = "latest"
+  }
 
-    storage_image_reference {
-        publisher = "Canonical"
-        offer = "UbuntuServer"
-        sku = "14.04.2-LTS"
-        version = "latest"
-    }
+  storage_os_disk {
+    name              = "myosdisk1"
+    caching           = "ReadWrite"
+    create_option     = "FromImage"
+    managed_disk_type = "Standard_LRS"
+  }
 
-    storage_os_disk {
-        name = "myosdisk"
-        vhd_uri = "${azurerm_storage_account.helloterraformstorage.primary_blob_endpoint}${azurerm_storage_container.helloterraformstoragestoragecontainer.name}/myosdisk.vhd"
-        caching = "ReadWrite"
-        create_option = "FromImage"
-    }
+  # Optional data disks
+  storage_data_disk {
+    name              = "datadisk_new"
+    managed_disk_type = "Standard_LRS"
+    create_option     = "Empty"
+    lun               = 0
+    disk_size_gb      = "50"
+  }
 
-    os_profile {
-        computer_name = "hostname"
-        admin_username = "testadmin"
-        admin_password = "Password1234!"
-    }
+  storage_data_disk {
+    name            = "${azurerm_managed_disk.test.name}"
+    managed_disk_id = "${azurerm_managed_disk.test.id}"
+    create_option   = "Attach"
+    lun             = 1
+    disk_size_gb    = "${azurerm_managed_disk.test.disk_size_gb}"
+  }
 
-    os_profile_linux_config {
-        disable_password_authentication = false
-    }
+  os_profile {
+    computer_name  = "hostname"
+    admin_username = "testadmin"
+    admin_password = "Password1234!"
+  }
 
-    tags {
-        environment = "staging"
-    }
+  os_profile_linux_config {
+    disable_password_authentication = false
+  }
+
+  tags {
+    environment = "staging"
+  }
 }
