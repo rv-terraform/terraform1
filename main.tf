@@ -1,95 +1,159 @@
-
-resource "azurerm_resource_group" "test" {
-  name     = "acctestrg"
-  location = "${var.access_location}"
+# Configure the Microsoft Azure Provider
+provider "azurerm" {
+    subscription_id = "${var.access_subscriptid}"
+    client_id       = "${var.access_appid}"
+    client_secret   = "${var.access_clientsecret}"
+    tenant_id       = "${var.access_tenantid}"
 }
 
-resource "azurerm_virtual_network" "test" {
-  name                = "acctvn"
-  address_space       = ["10.0.0.0/16"]
-  location            = "${var.access_location}"
-  resource_group_name = "${azurerm_resource_group.test.name}"
+# Create a resource group if it doesn’t exist
+resource "azurerm_resource_group" "myterraformgroup" {
+    name     = "myResourceGroup3"
+    location = "${var.access_location}"
+
+    tags {
+        environment = "Development"
+    }
 }
 
-resource "azurerm_subnet" "test" {
-  name                 = "acctsub"
-  resource_group_name  = "${azurerm_resource_group.test.name}"
-  virtual_network_name = "${azurerm_virtual_network.test.name}"
-  address_prefix       = "10.0.1.0/24"
+# Create virtual network
+resource "azurerm_virtual_network" "myterraformnetwork" {
+    name                = "myVnet"
+    address_space       = ["10.0.0.0/16"]
+    location            = "${var.access_location}"
+    resource_group_name = "${azurerm_resource_group.myterraformgroup.name}"
+
+    tags {
+        environment = "Development"
+    }
 }
 
-resource "azurerm_network_interface" "test" {
-  name                = "acctnic"
-  location            = "${var.access_location}"
-  resource_group_name = "${azurerm_resource_group.test.name}"
-
-  ip_configuration {
-    name                          = "testpublicip1"
-    subnet_id                     = "${azurerm_subnet.test.id}"
-    public_ip_address_allocation = "static"
-  }
+# Create subnet
+resource "azurerm_subnet" "myterraformsubnet" {
+    name                 = "mySubnet"
+    resource_group_name  = "${azurerm_resource_group.myterraformgroup.name}"
+    virtual_network_name = "${azurerm_virtual_network.myterraformnetwork.name}"
+    address_prefix       = "10.0.1.0/24"
 }
 
-resource "azurerm_managed_disk" "test" {
-  name                 = "datadisk_existing"
-  location             = "${var.access_location}"
-  resource_group_name  = "${azurerm_resource_group.test.name}"
-  storage_account_type = "Standard_LRS"
-  create_option        = "Empty"
-  disk_size_gb         = "100"
+# Create public IPs
+resource "azurerm_public_ip" "myterraformpublicip" {
+    name                         = "myPublicIP"
+    location                     = "${var.access_location}"
+    resource_group_name          = "${azurerm_resource_group.myterraformgroup.name}"
+    public_ip_address_allocation = "dynamic"
+
+    tags {
+        environment = "Development"
+    }
 }
 
-resource "azurerm_virtual_machine" "test" {
-  name                  = "acctvm"
-  location              = "${var.access_location}"
-  resource_group_name   = "${azurerm_resource_group.test.name}"
-  network_interface_ids = ["${azurerm_network_interface.test.id}"]
-  vm_size               = "Standard_DS1_v2"
-  delete_os_disk_on_termination = "true"
-  delete_data_disks_on_termination = "true"
+# Create Network Security Group and rule
+resource "azurerm_network_security_group" "myterraformnsg" {
+    name                = "myNetworkSecurityGroup"
+    location            = "${var.access_location}"
+    resource_group_name = "${azurerm_resource_group.myterraformgroup.name}"
 
-  storage_image_reference {
-    publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "16.04-LTS"
-    version   = "latest"
-  }
+    security_rule {
+        name                       = "SSH"
+        priority                   = 1001
+        direction                  = "Inbound"
+        access                     = "Allow"
+        protocol                   = "Tcp"
+        source_port_range          = "*"
+        destination_port_range     = "22"
+        source_address_prefix      = "*"
+        destination_address_prefix = "*"
+    }
 
-  storage_os_disk {
-    name              = "myosdisk1"
-    caching           = "ReadWrite"
-    create_option     = "FromImage"
-    managed_disk_type = "Standard_LRS"
-  }
+    tags {
+        environment = "Development"
+    }
+}
 
-  # Optional data disks
-  storage_data_disk {
-    name              = "datadisk_new"
-    managed_disk_type = "Standard_LRS"
-    create_option     = "Empty"
-    lun               = 0
-    disk_size_gb      = "50"
-  }
+# Create network interface
+resource "azurerm_network_interface" "myterraformnic" {
+    name                      = "myNIC"
+    location                  = "${var.access_location}"
+    resource_group_name       = "${azurerm_resource_group.myterraformgroup.name}"
+    network_security_group_id = "${azurerm_network_security_group.myterraformnsg.id}"
 
-  storage_data_disk {
-    name            = "${azurerm_managed_disk.test.name}"
-    managed_disk_id = "${azurerm_managed_disk.test.id}"
-    create_option   = "Attach"
-    lun             = 1
-    disk_size_gb    = "${azurerm_managed_disk.test.disk_size_gb}"
-  }
+    ip_configuration {
+        name                          = "myNicConfiguration"
+        subnet_id                     = "${azurerm_subnet.myterraformsubnet.id}"
+        private_ip_address_allocation = "dynamic"
+        public_ip_address_id          = "${azurerm_public_ip.myterraformpublicip.id}"
+    }
 
-  os_profile {
-    computer_name  = "hostname"
-    admin_username = "testadmin"
-    admin_password = "Password1234!"
-  }
+    tags {
+        environment = "Development"
+    }
+}
 
-  os_profile_linux_config {
-    disable_password_authentication = false
-  }
+# Generate random text for a unique storage account name
+resource "random_id" "randomId" {
+    keepers = {
+        # Generate a new ID only when a new resource group is defined
+        resource_group = "${azurerm_resource_group.myterraformgroup.name}"
+    }
 
-  tags {
-    environment = "staging"
-  }
+    byte_length = 8
+}
+
+# Create storage account for boot diagnostics
+resource "azurerm_storage_account" "mystorageaccount" {
+    name                        = "diag${random_id.randomId.hex}"
+    resource_group_name         = "${azurerm_resource_group.myterraformgroup.name}"
+    location                    = "${var.access_location}"
+    account_tier                = "Standard"
+    account_replication_type    = "LRS"
+
+    tags {
+        environment = "Development"
+    }
+}
+
+# Create virtual machine
+resource "azurerm_virtual_machine" "myterraformvm" {
+    name                  = "myVM"
+    location              = "${var.access_location}"
+    resource_group_name   = "${azurerm_resource_group.myterraformgroup.name}"
+    network_interface_ids = ["${azurerm_network_interface.myterraformnic.id}"]
+    vm_size               = "Standard_A0"
+
+    storage_os_disk {
+        name              = "myOsDisk"
+        caching           = "ReadWrite"
+        create_option     = "FromImage"
+        managed_disk_type = "Standard_LRS"
+    }
+
+    storage_image_reference {
+        publisher = "Canonical"
+        offer     = "UbuntuServer"
+        sku       = "16.04.0-LTS"
+        version   = "latest"
+    }
+
+    os_profile {
+        computer_name  = "myvm"
+        admin_username = "azureuser"
+    }
+
+    os_profile_linux_config {
+        disable_password_authentication = true
+        ssh_keys {
+            path     = "/home/azureuser/.ssh/authorized_keys"
+            key_data = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDk2wpIhhaT3Dlpu6E5321L43wT8WPKtvOeXBVwAxgZ250nXwlkXhBWJbNj17h+aEPB9FgDm25ua+ju3i0ZTFUgOMLpS0vofqQwb1dg/ACqXdou7jG5GFBhSvu/XGrzlNZ04Jx/HsJZ9HdLpZ8iHzsKz76rf5C8OeCjdSIZq2BcACzJP1xxW8hVeEeFx7d7Y0vxLTpcawpxWayGTQWb2EhlBfqL8aw5A6qSGCh46EL5tfDajrS4sUKOOI38y1I1jqAWQF1CwYTI9y2CbW0OXifoPbWqUPKaKh7zSNwsnRVr1c+oICcD0KUBPfBtTdVKcUnbCjWS3rZBxgW8hKgFAwh5 ricky@centos"
+        }
+    }
+
+    boot_diagnostics {
+        enabled = "true"
+        storage_uri = "${azurerm_storage_account.mystorageaccount.primary_blob_endpoint}"
+    }
+
+    tags {
+        environment = "Development"
+    }
 }
