@@ -8,7 +8,7 @@ provider "azurerm" {
 
 # Create a resource group if it doesn’t exist
 resource "azurerm_resource_group" "myterraformgroup" {
-    name     = "myResourceGroup3"
+    name     = "myResourceGroup"
     location = "${var.access_location}"
 
     tags {
@@ -90,28 +90,6 @@ resource "azurerm_network_interface" "myterraformnic" {
     }
 }
 
-# Generate random text for a unique storage account name
-resource "random_id" "randomId" {
-    keepers = {
-        # Generate a new ID only when a new resource group is defined
-        resource_group = "${azurerm_resource_group.myterraformgroup.name}"
-    }
-
-    byte_length = 8
-}
-
-# Create storage account for boot diagnostics
-resource "azurerm_storage_account" "mystorageaccount" {
-    name                        = "diag${random_id.randomId.hex}"
-    resource_group_name         = "${azurerm_resource_group.myterraformgroup.name}"
-    location                    = "${var.access_location}"
-    account_tier                = "Standard"
-    account_replication_type    = "LRS"
-
-    tags {
-        environment = "Development"
-    }
-}
 
 # Create virtual machine
 resource "azurerm_virtual_machine" "myterraformvm" {
@@ -144,13 +122,8 @@ resource "azurerm_virtual_machine" "myterraformvm" {
         disable_password_authentication = true
         ssh_keys {
             path     = "/home/azureuser/.ssh/authorized_keys"
-            key_data = "ssh-rsa AAAgDm25QF1CwYTI9y2CbW0OXifoPbWqUPKaKh7zSNwsnRVr1c+oICcD0KUBPfBtTdVKcUnbCjWS3rZBxgW8hKgFAwh5 xxxx@centos"
+            key_data = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDno5V8Dcf14iT3V3Sk7Amk2G7cZixOStYo0bUH9bnTCxUPd/86ahshQxOxhOqpifPx8zxzyPEQJuygGraWFY4oWU90nfjyal9pg7NHifoMtSGaYY2CDuhyhB5njSM8Djbo+Qls29ko6f1hH2UAZ5TOGp0fOJdlMyhxLzzCvINjgBcE7f9uZW7oKv+bgd5KmPppEgEbMyM+vnWAGGGWNFX7m5ZBL/2d4//ct31qel1lTIfu+LIXroZTeMwf4KioGDdMBhsJC1H4edfvQxhwLp0S3zXceCAO4z9NjHdD8iNZEHWS9lqBzjpbKZVYkh0jmHlVOHWs5c6P4Qnfzi57bvXj sanfe@LPWIN10-3"
         }
-    }
-
-    boot_diagnostics {
-        enabled = "true"
-        storage_uri = "${azurerm_storage_account.mystorageaccount.primary_blob_endpoint}"
     }
 
     tags {
