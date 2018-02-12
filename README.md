@@ -22,10 +22,10 @@ $ terraform apply<br>
 
 $ terraform destroy
  
-Install repo,
+Install repo<br>
 sh -c 'echo -e "[centos]\nname=CentOS $releasever - $basearch\nbaseurl=http://mirror.centos.org/centos/7/os/\$basearch/\nenabled=1\ngpgcheck=1\ngpgkey=http://mirror.centos.org/centos/7/os/\$basearch/RPM-GPG-KEY-CentOS-7" > /etc/yum.repos.d/centos.repo'
 
-Install GUI,
+Install GUI<br>
 *REDHAT
 yum groupinstall "Server with GUI" -y
 *CENTOS7
