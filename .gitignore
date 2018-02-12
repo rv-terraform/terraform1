@@ -9,3 +9,7 @@ debuglog.txt
 **/terraform_plugins/**
 **/.vscode/**
 **/*.bak
+**/*.txt
+*.bak
+*.txt
+
