@@ -12,4 +12,5 @@ debuglog.txt
 **/*.txt
 *.bak
 *.txt
+**/variables.tf
 
